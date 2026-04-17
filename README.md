@@ -1,122 +1,129 @@
-# Parking Sign Studio
+# Reserved Parking Sign Generator
 
-A zero-backend, single-file web app for generating print-ready **A4-landscape parking signs**. Live preview, 8 preset templates, multilingual titles, optional QR codes, print-safe CSS.
+A zero-backend, single-file web app for hotels, offices, and venues to generate printable **A4-landscape reserved-parking signs**. Fill in the form, preview updates live, hit print.
 
-**Live demo:** [parking-sign-generator.pages.dev/parking-demo](https://parking-sign-generator.pages.dev/parking-demo)
-
----
-
-## About
-
-I built this for a hotel that needed a quick way to generate guest-specific reserved parking signs without relying on Word templates or design software. The production version is a single-brand tool deployed at the property; this repo is the richer demo variant — same print engine, but with a template system that reconfigures the whole app (branding, colours, language, contact defaults) for different venue types.
-
-Two files, two audiences:
-
-- **`parking-demo.html`** — 8 venue templates (hotel, clinic, office, restaurant, residence, event, loading bay, blank), 5 languages, inline-generated SVG logos, localStorage history. The showcase version.
-- **`parking.html`** — single-brand production variant with one `CONFIG` block. What actually runs at the hotel.
-
-Both files are fully self-contained: one HTML file, inline CSS and JS, one CDN dependency (qrcodejs). No build step, no framework, no package manager.
+![A4 landscape · Print-ready](https://img.shields.io/badge/format-A4%20Landscape-0f172a)
+![No backend](https://img.shields.io/badge/stack-static%20HTML-facc15)
 
 ---
 
-## Highlights
+## Features
 
-**Print-focused design.** CSS is built around `@page { size: A4 landscape; margin: 0 }` with forced background printing, a 10 mm internal safe-area, and binary-search auto-fit typography that scales plate numbers and guest names to fit regardless of length.
-
-**Template system (demo version).** A `TEMPLATES` object at the top of the script defines each venue preset — brand, colours, multilingual sign titles, contact role, realistic defaults, inline SVG logo. Adding a new template is a single object literal; the UI grid re-renders automatically.
-
-**Inline SVG logos.** The demo generates template logos on the fly as SVG data URIs — no external image files, so the entire demo travels as a single HTML file you can email or drop on any static host.
-
-**Multilingual sign titles.** English, Bahasa Malaysia, Chinese (Simplified), Tamil, and Punjabi, with Google Fonts (Noto Sans) swap-loaded for non-Latin scripts. Primary and secondary language pickers let you render bilingual signs.
-
-**Smart QR codes.** Two optional QR slots: a main one (website preset, sign-details preset, or arbitrary string) and a contact QR that auto-detects phone numbers (→ `tel:`), emails (→ `mailto:`), or falls back to plain text.
-
-**Date validation without being annoying.** Past dates turn red with a warning but don't block submission — backdated passes are a real use case. Expired signs show a diagonal red "EXPIRED" ribbon so the status is unmissable.
-
-**Accessibility details.** Real `<button>` elements throughout, proper `<label for="">` pairings, `aria-pressed` / `aria-checked` on toggles, `lang` attributes on rendered titles, `role="img"` on the preview canvas, visible focus rings.
-
-**Persistence.** Last-used template, collapsed-section state, and the last 10 printed signs are saved to `localStorage`. No server, no tracking, no analytics.
+- **Live preview** at true A4 landscape size (297 × 210 mm)
+- **Colour & B&W modes** — toggle between accent-coloured and pure-ink output (saves toner, looks sharp on photocopies)
+- **Optional QR code** with presets for your website or auto-encoding the sign details (plate / guest / validity) for scan-verification
+- **Room number badge** — optional bordered tag next to guest name
+- **Notes line** — small italic line for extra instructions ("Loading dock", "Level B2", etc.)
+- **Quick-date chips** — Today, +1 Night, +2 Nights, +1 Week
+- **DD/MM/YYYY** date formatting
+- **Auto-fit typography** — long plates and long guest names shrink smoothly via binary-search sizing
+- **Print-safe CSS** — `@page A4 landscape` with zero margins and forced background printing
+- **Fully configurable** — one `CONFIG` block at the top of the script lets you rebrand for any organisation in a minute
+- **Keyboard shortcut** — `Ctrl/Cmd + Enter` to print
 
 ---
 
-## Tech notes
+## Quick start (Hotel Neo+ Penang, out of the box)
 
-| | |
-|---|---|
-| Stack | Vanilla HTML, CSS, JS. No framework. |
-| Dependencies | qrcodejs (CDN, ~15 KB). Google Fonts for CJK/Tamil/Gurmukhi scripts. |
-| Size | ~55 KB per file, uncompressed. |
-| Print target | A4 landscape (297 × 210 mm), colour and B&W modes. |
-| Browser support | Chrome, Edge, Firefox, Safari. Not IE. |
-| Storage | `localStorage` for prefs and history. Fully functional without it. |
+1. Open `parking.html` in a browser. Done. It works standalone from disk, no server needed.
+2. Or deploy the folder as-is (see [Deployment](#deployment) below).
 
----
+## Customising for a different organisation
 
-## Running locally
-
-```bash
-# Just open the file
-open parking-demo.html          # macOS
-start parking-demo.html         # Windows
-xdg-open parking-demo.html      # Linux
-
-# Or serve it
-python3 -m http.server 8000
-# then browse to http://localhost:8000/parking-demo.html
-```
-
-No install step. No build step.
-
----
-
-## Adding a template (demo version)
-
-Open `parking-demo.html`, find the `TEMPLATES` object near the top of the `<script>` block, and add an entry:
+You only ever need to edit **one block**: the `CONFIG` object near the top of the `<script>` section in `parking.html`.
 
 ```js
-school: {
-  name: "School",
+const CONFIG = {
   brand: {
-    name: "Riverside Academy",
-    enforcementText: "Staff and registered visitors only",
-    websiteUrl: "https://example.edu"
+    name:            "Your Hotel Name",
+    logoUrl:         "assets/logo.png",            // PNG / JPG / SVG, transparent PNG works best
+    faviconUrl:      "https://example.com/favicon.ico",
+    websiteUrl:      "https://example.com",        // used by the "Website" QR preset
+    enforcementText: "Unauthorised vehicles will be towed at owner's expense",
+    signTitle:       "RESERVED PARKING"            // big headline — could be "VISITOR PARKING", "STAFF PARKING", "LOADING BAY"
   },
-  contact: {
-    label: "School Office",
-    value: "+60 3-1234 5678"
+  colors: {
+    accent: "#facc15",   // primary highlight — ignored in B&W mode
+    dark:   "#0f172a"    // near-black used for text and frames
   },
-  signTitles: {
-    en: "STAFF PARKING",
-    bm: "PARKIR KAKITANGAN",
-    zh: "教职员工停车位",
-    ta: "ஊழியர் பார்க்கிங்",
-    pa: "ਸਟਾਫ਼ ਪਾਰਕਿੰਗ"
-  },
-  colors: { accent: "#0369a1", dark: "#0c4a6e" },
-  logo:   { text: "RA", color: "#0369a1" },
   defaults: {
-    plate: "WQR 4501",
-    guestName: "TEACHING STAFF",
-    roomLabel: "Block"
+    plate:     "ABC 1234",
+    guestName: "VIP GUEST"
   }
-}
+};
 ```
 
-Reload. The new card appears in the template grid.
+### Replacing the logo
+
+Drop your logo into the `assets/` folder (or anywhere you like) and point `CONFIG.brand.logoUrl` at it.
+
+Supported:
+- Relative path — `"assets/logo.png"` (recommended for repo deployment)
+- Absolute URL — `"https://example.com/logo.svg"`
+- Inlined data-URI — `"data:image/png;base64,…"` (useful if you want a truly single-file distributable)
+
+**Logo tips**
+- Transparent PNG or SVG gives the cleanest print
+- Wide/landscape logos work best since the header slot is ~22 mm tall
+- The same image is used as a faint watermark behind the sign — a strong silhouette helps here
+
+### Changing the accent colour
+
+Edit `CONFIG.colors.accent`. Any hex value works. Examples:
+
+| Brand feel     | Accent      |
+| -------------- | ----------- |
+| Hotel / yellow | `#facc15`   |
+| Corporate blue | `#2563eb`   |
+| Luxury gold    | `#c9a227`   |
+| Red alert      | `#dc2626`   |
+| Forest green   | `#16a34a`   |
+
+B&W mode automatically overrides this with pure black, so whatever you pick is safe for colour printing without breaking monochrome.
 
 ---
 
-## Design decisions worth noting
+## Deployment
 
-**Why inline SVG logos instead of image files?** The demo is meant to be evaluated in isolation — someone can email the HTML file to a colleague and it just works, no broken image links. Real brands would swap in a proper logo image via `logoImage: "..."` on any template.
+### Cloudflare Pages (recommended, free)
 
-**Why `DD/MM/YYYY` dates?** The target audience is Malaysian and wider Asia-Pacific; MM/DD gets misread, and front-desk staff shouldn't have to think about formatting. ISO-style (`YYYY-MM-DD`) is accurate but cold on a printed sign.
+1. Push this folder to a GitHub or GitLab repository
+2. Log in to Cloudflare → Workers & Pages → Create → Pages → Connect to Git
+3. Pick your repo
+4. **Framework preset:** None
+5. **Build command:** *(leave blank)*
+6. **Build output directory:** `/`
+7. Save and Deploy
 
-**Why allow past dates?** Retroactive parking passes are common — a guest stays late, a delivery runs over, a visitor disputes a tow. Warning is better than blocking.
+Your sign generator is live at `https://<project>.pages.dev`. Every push to `main` redeploys automatically.
 
-**Why a 10 mm internal frame instead of edge-to-edge?** Many office printers can't print edge-to-edge. The frame guarantees nothing important clips regardless of printer.
+### GitHub Pages
 
-**Why localStorage instead of a cookie or backend?** The tool should run entirely offline. Printing parking signs shouldn't depend on a server being up.
+1. Push to GitHub
+2. Repo → Settings → Pages
+3. Source: **Deploy from a branch** → `main` → `/ (root)`
+4. Save. URL appears after a minute at `https://<user>.github.io/<repo>/parking.html`
+
+### Any static host
+
+The entire app is just HTML + CSS + JS + one image. Drop the folder on:
+- Netlify — drag-and-drop the folder onto netlify.com/drop
+- Vercel — `vercel` in the folder
+- S3 + CloudFront — upload as static files
+- A plain Apache/nginx box — copy to the web root
+
+### Run locally
+
+```bash
+# Option 1: just open the file
+open parking.html          # macOS
+start parking.html         # Windows
+xdg-open parking.html      # Linux
+
+# Option 2: any static server
+python3 -m http.server 8000
+# then browse to http://localhost:8000/parking.html
+```
 
 ---
 
@@ -124,15 +131,56 @@ Reload. The new card appears in the template grid.
 
 ```
 .
-├── parking-demo.html       Multi-template demo version (recommended)
-├── parking.html            Single-brand production variant
+├── parking.html      The entire app — HTML, CSS, JS inline
 ├── assets/
-│   └── logo.png            Hotel logo used by parking.html
-└── README.md               This file
+│   └── logo.png      Your organisation logo (header + watermark)
+└── README.md         This file
 ```
+
+That's the whole project. No build step, no dependencies to install, no framework.
+
+The one external dependency is the **qrcodejs** library, loaded from the jsDelivr CDN inside `parking.html`. If you need full offline operation, download [qrcode.min.js](https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js), save it next to `parking.html`, and change the `<script src="…">` line to a local path.
+
+---
+
+## Printing tips
+
+- **Paper:** A4, landscape. The tool is strictly sized for A4 — do not use Letter or other sizes.
+- **Margins:** the CSS sets `@page { margin: 0 }`. In the browser print dialog, set **Margins → Default** (or None). If your printer can't print edge-to-edge, the 10mm internal frame means nothing important gets clipped.
+- **Background graphics:** must be **ON**. This is the single most common reason signs print wrong. In Chrome/Edge the checkbox is under **More settings → Background graphics**. Turn it on every time.
+- **Colour vs B&W:** pick the theme in the sidebar *before* printing. Colour mode relies on printable accent colour; B&W mode assumes a laser or monochrome inkjet.
+- **Chrome/Edge** give the cleanest output. Firefox and Safari work but occasionally shift margins by 1–2 mm.
+- **PDF export:** in the print dialog, pick "Save as PDF" as the destination. You get a perfect A4-landscape PDF you can email or archive.
+
+---
+
+## QR code notes
+
+The QR code is **optional** — leave the field blank and it disappears from the sign.
+
+When filled in, it renders as a 20 × 20 mm square in the footer. Three quick presets are provided:
+
+| Preset         | Content encoded                                                                 |
+| -------------- | ------------------------------------------------------------------------------- |
+| **Website**    | Your `CONFIG.brand.websiteUrl`                                                  |
+| **Sign details** | `Plate: … \| Guest: … \| Room: … \| From: … \| To: …` (useful for security scanning and cross-checking against a register) |
+| **Clear**      | Empties the field                                                               |
+
+You can also type **anything** into the box — a URL, a WhatsApp link (`https://wa.me/60123456789`), a tel: link, a vCard, whatever makes sense for your operation.
+
+---
+
+## Browser support
+
+| Browser         | Supported   | Notes                                    |
+| --------------- | ----------- | ---------------------------------------- |
+| Chrome / Edge   | ✅ Full     | Best print output                         |
+| Firefox         | ✅ Full     | Minor margin drift possible               |
+| Safari          | ✅ Full     | Test-print once before rolling out         |
+| IE 11           | ❌          | Uses ES6 + CSS custom properties          |
 
 ---
 
 ## Licence
 
-MIT. Use it, fork it, rebrand it, ship it.
+Use it, fork it, rebrand it, ship it. No attribution required.
